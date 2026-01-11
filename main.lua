@@ -1,115 +1,217 @@
--- =========================
+-- =====================================================
 -- SERVICES
--- =========================
+-- =====================================================
 local rs = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
-local char = lp.Character or lp.CharacterAdded:Wait()
+local cam = workspace.CurrentCamera
 
-repeat task.wait() until char
-    and char:FindFirstChild("Humanoid")
-    and char:FindFirstChild("HumanoidRootPart")
+-- =====================================================
+-- CHARACTER BIND (ANTI RESPAWN BUG)
+-- =====================================================
+local char, hrp, humanoid
 
-local humanoid = char.Humanoid
-local hrp = char.HumanoidRootPart
+local function bindCharacter(c)
+    char = c
+    hrp = c:WaitForChild("HumanoidRootPart")
+    humanoid = c:FindFirstChildOfClass("Humanoid")
+end
 
--- =========================
--- RAYFIELD LOAD
--- =========================
+if lp.Character then
+    bindCharacter(lp.Character)
+end
+
+lp.CharacterAdded:Connect(bindCharacter)
+
+-- =====================================================
+-- RAYFIELD UI
+-- =====================================================
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 local Window = Rayfield:CreateWindow({
-    Name = "M1 Combo Panel",
-    LoadingTitle = "Combat UI",
+    Name = "Combat Controller (NO FELL)",
+    LoadingTitle = "Separated System",
     LoadingSubtitle = "Roland | Sinclair",
-    ConfigurationSaving = {
-        Enabled = false
-    }
+    ConfigurationSaving = { Enabled = false }
 })
 
-local Tab = Window:CreateTab("M1", 4483362458)
+local TabCombat = Window:CreateTab("Combat", 4483362458)
+local TabClean  = Window:CreateTab("Cleaner", 4483362458)
 
--- =========================
+-- =====================================================
 -- MODULES
--- =========================
-
+-- =====================================================
+-- Roland M1
 local RolandModules = {
     rs.src.Others.Roland["The Black Silence"].Moves.Base.M1.Combos["1"],
     rs.src.Others.Roland["The Black Silence"].Moves.Base.M1.Combos["2"],
     rs.src.Others.Roland["The Black Silence"].Moves.Base.M1.Combos["3"],
 }
 
+-- Sinclair M1
 local SinclairModules = {
     rs.src.Identities.Sinclair["Dawn Office Fixer"].Moves.Xenprima.M1.Combos["1"],
     rs.src.Identities.Sinclair["Dawn Office Fixer"].Moves.Xenprima.M1.Combos["2"],
     rs.src.Identities.Sinclair["Dawn Office Fixer"].Moves.Xenprima.M1.Combos["3"],
 }
 
--- =========================
+-- =====================================================
 -- STATE
--- =========================
-local RolandOn = false
+-- =====================================================
+local RolandOn   = false
 local SinclairOn = false
 
--- =========================
--- LOOP
--- =========================
+local DeleteDMG    = false
+local DeleteEffect = false
+
+local LockFOV  = false
+local FOVValue = 70
+
+-- =====================================================
+-- ROLAND LOOP
+-- =====================================================
 task.spawn(function()
-    while true do
-        if RolandOn then
-            for _, module in ipairs(RolandModules) do
-                rs.Net.Character.Combat:FireServer({
-                    Module = module,
-                    Humanoid = humanoid,
-                    Attempt = "M1",
-                    HRP = hrp,
-                    Char = char,
-                })
+    while task.wait() do
+        if not RolandOn or not char then continue end
 
-                rs.Net.Main.EffectCombat:FireServer({
-                    Module = module,
-                    M1 = true,
-                })
-            end
+        for _, module in ipairs(RolandModules) do
+            if not RolandOn then break end
+
+            rs.Net.Character.Combat:FireServer({
+                Attempt = "M1",
+                Module = module,
+                HRP = hrp,
+                Char = char,
+                Humanoid = humanoid
+            })
+
+            rs.Net.Main.EffectCombat:FireServer({
+                Module = module,
+                M1 = true,
+            })
         end
-
-        if SinclairOn then
-            for _, module in ipairs(SinclairModules) do
-                rs.Net.Character.Combat:FireServer({
-                    Module = module,
-                    Humanoid = humanoid,
-                    Attempt = "M1",
-                    HRP = hrp,
-                    Char = char,
-                })
-
-                rs.Net.Main.EffectCombat:FireServer({
-                    Module = module,
-                    M1 = true,
-                })
-            end
-        end
-
-        task.wait() -- KHÔNG delay đánh, chỉ nhường frame
     end
 end)
 
--- =========================
--- TOGGLES
--- =========================
+-- =====================================================
+-- SINCLAIR LOOP
+-- =====================================================
+task.spawn(function()
+    while task.wait() do
+        if not SinclairOn or not char then continue end
 
-Tab:CreateToggle({
-    Name = "Roland M1 Combo",
-    CurrentValue = false,
-    Callback = function(v)
-        RolandOn = v
+        for _, module in ipairs(SinclairModules) do
+            if not SinclairOn then break end
+
+            rs.Net.Character.Combat:FireServer({
+                Attempt = "M1",
+                Module = module,
+                HRP = hrp,
+                Char = char,
+                Humanoid = humanoid
+            })
+
+            rs.Net.Main.EffectCombat:FireServer({
+                Module = module,
+                M1 = true,
+            })
+        end
     end
+end)
+
+-- =====================================================
+-- LOCK FOV
+-- =====================================================
+task.spawn(function()
+    while task.wait() do
+        if LockFOV and cam then
+            cam.FieldOfView = FOVValue
+        end
+    end
+end)
+
+-- =====================================================
+-- CLEANER SYSTEM
+-- =====================================================
+local function isDamageText(txt)
+    return tonumber(txt:match("%d+")) ~= nil
+end
+
+local function handleObj(obj)
+    -- DMG
+    if DeleteDMG then
+        if obj:IsA("TextLabel") and isDamageText(obj.Text) then
+            obj:Destroy()
+            return
+        end
+        if obj:IsA("BillboardGui") then
+            for _, v in ipairs(obj:GetDescendants()) do
+                if v:IsA("TextLabel") and isDamageText(v.Text) then
+                    obj:Destroy()
+                    return
+                end
+            end
+        end
+    end
+
+    -- EFFECT
+    if DeleteEffect then
+        if obj:IsA("ParticleEmitter")
+        or obj:IsA("Trail")
+        or obj:IsA("Beam")
+        or obj:IsA("Explosion")
+        or obj:IsA("Smoke")
+        or obj:IsA("Fire") then
+            obj:Destroy()
+        end
+    end
+end
+
+local function hook(root)
+    for _, v in ipairs(root:GetDescendants()) do
+        handleObj(v)
+    end
+    root.DescendantAdded:Connect(handleObj)
+end
+
+-- Hook toàn game
+hook(workspace)
+
+for _, p in ipairs(Players:GetPlayers()) do
+    if p.Character then hook(p.Character) end
+    if p:FindFirstChild("PlayerGui") then hook(p.PlayerGui) end
+end
+
+Players.PlayerAdded:Connect(function(p)
+    p.CharacterAdded:Connect(hook)
+end)
+
+-- =====================================================
+-- UI TOGGLES
+-- =====================================================
+TabCombat:CreateToggle({
+    Name = "Roland M1",
+    Callback = function(v) RolandOn = v end
 })
 
-Tab:CreateToggle({
-    Name = "Sinclair M1 Combo",
-    CurrentValue = false,
-    Callback = function(v)
-        SinclairOn = v
+TabCombat:CreateToggle({
+    Name = "Sinclair M1",
+    Callback = function(v) SinclairOn = v end
+})
+
+TabCombat:CreateToggle({
+    Name = "Lock FOV (70)",
+    Callback = function(v) LockFOV = v end
+})
+
+TabClean:CreateToggle({
+    Name = "Delete Damage Numbers",
+    Callback = function(v) DeleteDMG = v end
+})
+
+TabClean:CreateToggle({
+    Name = "Delete Effects",
+    Callback = function(v) DeleteEffect = v end
+})        SinclairOn = v
     end
 })
