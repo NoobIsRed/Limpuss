@@ -23,8 +23,8 @@ lp.CharacterAdded:Connect(bindCharacter)
 -- =====================================================
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
-    Name = "Combat Controller",
-    LoadingTitle = "Separated System",
+    Name = "Limpussss",
+    LoadingTitle = "Test thooiii",
     LoadingSubtitle = "Roland | Sinclair | John",
     ConfigurationSaving = { Enabled = false }
 })
