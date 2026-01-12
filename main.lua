@@ -1,6 +1,3 @@
--- =====================================================
--- SERVICES
--- =====================================================
 local rs = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local lp = Players.LocalPlayer
@@ -41,14 +38,12 @@ local TabClean  = Window:CreateTab("Cleaner", 4483362458)
 -- =====================================================
 -- MODULES
 -- =====================================================
--- Roland M1
 local RolandModules = {
     rs.src.Others.Roland["The Black Silence"].Moves.Base.M1.Combos["1"],
     rs.src.Others.Roland["The Black Silence"].Moves.Base.M1.Combos["2"],
     rs.src.Others.Roland["The Black Silence"].Moves.Base.M1.Combos["3"],
 }
 
--- Sinclair M1
 local SinclairModules = {
     rs.src.Identities.Sinclair["Dawn Office Fixer"].Moves.Xenprima.M1.Combos["1"],
     rs.src.Identities.Sinclair["Dawn Office Fixer"].Moves.Xenprima.M1.Combos["2"],
@@ -73,10 +68,8 @@ local FOVValue = 70
 task.spawn(function()
     while task.wait() do
         if not RolandOn or not char then continue end
-
         for _, module in ipairs(RolandModules) do
             if not RolandOn then break end
-
             rs.Net.Character.Combat:FireServer({
                 Attempt = "M1",
                 Module = module,
@@ -84,7 +77,6 @@ task.spawn(function()
                 Char = char,
                 Humanoid = humanoid
             })
-
             rs.Net.Main.EffectCombat:FireServer({
                 Module = module,
                 M1 = true,
@@ -99,10 +91,8 @@ end)
 task.spawn(function()
     while task.wait() do
         if not SinclairOn or not char then continue end
-
         for _, module in ipairs(SinclairModules) do
             if not SinclairOn then break end
-
             rs.Net.Character.Combat:FireServer({
                 Attempt = "M1",
                 Module = module,
@@ -110,7 +100,6 @@ task.spawn(function()
                 Char = char,
                 Humanoid = humanoid
             })
-
             rs.Net.Main.EffectCombat:FireServer({
                 Module = module,
                 M1 = true,
@@ -138,7 +127,6 @@ local function isDamageText(txt)
 end
 
 local function handleObj(obj)
-    -- DMG
     if DeleteDMG then
         if obj:IsA("TextLabel") and isDamageText(obj.Text) then
             obj:Destroy()
@@ -154,7 +142,6 @@ local function handleObj(obj)
         end
     end
 
-    -- EFFECT
     if DeleteEffect then
         if obj:IsA("ParticleEmitter")
         or obj:IsA("Trail")
@@ -174,7 +161,6 @@ local function hook(root)
     root.DescendantAdded:Connect(handleObj)
 end
 
--- Hook toàn game
 hook(workspace)
 
 for _, p in ipairs(Players:GetPlayers()) do
@@ -187,31 +173,44 @@ Players.PlayerAdded:Connect(function(p)
 end)
 
 -- =====================================================
--- UI TOGGLES
+-- UI TOGGLES (FIXED)
 -- =====================================================
 TabCombat:CreateToggle({
     Name = "Roland M1",
-    Callback = function(v) RolandOn = v end
+    CurrentValue = false,
+    Callback = function(v)
+        RolandOn = v
+    end
 })
 
 TabCombat:CreateToggle({
     Name = "Sinclair M1",
-    Callback = function(v) SinclairOn = v end
+    CurrentValue = false,
+    Callback = function(v)
+        SinclairOn = v
+    end
 })
 
 TabCombat:CreateToggle({
     Name = "Lock FOV (70)",
-    Callback = function(v) LockFOV = v end
+    CurrentValue = false,
+    Callback = function(v)
+        LockFOV = v
+    end
 })
 
 TabClean:CreateToggle({
     Name = "Delete Damage Numbers",
-    Callback = function(v) DeleteDMG = v end
+    CurrentValue = false,
+    Callback = function(v)
+        DeleteDMG = v
+    end
 })
 
 TabClean:CreateToggle({
     Name = "Delete Effects",
-    Callback = function(v) DeleteEffect = v end
-})        SinclairOn = v
+    CurrentValue = false,
+    Callback = function(v)
+        DeleteEffect = v
     end
 })
